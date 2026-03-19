@@ -9,6 +9,7 @@ from prosperity4bt.tools.result_merger import ResultMerger
 from prosperity4bt.tools.summary_printer import SummaryPrinter
 from prosperity4bt.models.test_options import TestOptions, RoundDayOption
 from prosperity4bt.test_runner import TestRunner
+from prosperity4bt.tools.visualizer import Visualizer
 
 
 class BackTester:
@@ -90,13 +91,5 @@ class BackTester:
 
 
     def __open_visualizer(self):
-        pass
-        # http_handler = partial(HTTPRequestHandler, directory=str(output_file.parent))
-        # http_server = CustomHTTPServer(("localhost", 0), http_handler)
-        #
-        # webbrowser.open(
-        #     f"https://jmerle.github.io/imc-prosperity-3-visualizer/?open=http://localhost:{http_server.server_port}/{output_file.name}"
-        # )
-        #
-        # while not http_server.shutdown_flag:
-        #     http_server.handle_request()
+        visualizer = Visualizer()
+        visualizer.open(self.options.output_file)
