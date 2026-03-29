@@ -19,6 +19,9 @@ dependencies = [
 [project.scripts]
 prosperity4bt = "prosperity4bt.__main__:main"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["prosperity4bt*"]
