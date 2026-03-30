@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "imc-prosperity-4-backtester"
+name = "prosperity4bt"
 version = "0.0.1"
 description = "Backtester for IMC Prosperity 4 algorithms"
 readme = "README.md"
