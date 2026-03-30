@@ -54,7 +54,7 @@ class SummaryPrinter:
                 f"Round {result.round_num} day {result.day_num}: "
                 f"Profit per-ts: {profit_per_timestep:,.4f} | ",
                 f"Sharpe: {sharpe:,.4f}",
-                f"Total profit: {profit:,.0f}"
+                f"Total PnL: {profit:,.0f}"
             )
 
             total_profit += profit
@@ -67,4 +67,4 @@ class SummaryPrinter:
 
         print(f"Profit per-ts: {overall_profit_per_timestep:,.4f}")
         print(f"Sharpe: {overall_sharpe:,.4f}")
-        print(f"Total profit: {total_profit:,.0f}")
+        print(f"Total PnL: {total_profit:,.0f}")
