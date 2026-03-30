@@ -56,6 +56,7 @@ class SummaryPrinter:
                 f"Sharpe: {sharpe:,.4f}",
                 f"Total PnL: {profit:,.0f}"
             )
+            print()
 
             total_profit += profit
             total_timesteps += num_timesteps
@@ -68,3 +69,4 @@ class SummaryPrinter:
         print(f"Profit per-ts: {overall_profit_per_timestep:,.4f}")
         print(f"Sharpe: {overall_sharpe:,.4f}")
         print(f"Total PnL: {total_profit:,.0f}")
+        print()
