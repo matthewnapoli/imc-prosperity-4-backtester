@@ -66,6 +66,7 @@ class SummaryPrinter:
         overall_std = math.sqrt(sum((x - sum(all_returns) / len(all_returns)) ** 2 for x in all_returns) / len(all_returns)) if all_returns else 0.0
         overall_sharpe = ((sum(all_returns)/len(all_returns)) / overall_std) * 100 if overall_std else 0.0
 
+        print("\nOverall summary:")
         print(f"Profit per-ts: {overall_profit_per_timestep:,.4f}")
         print(f"Sharpe: {overall_sharpe:,.4f}")
         print(f"Total PnL: {total_profit:,.0f}")
