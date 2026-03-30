@@ -19,11 +19,12 @@ class SummaryPrinter:
         pnl_series = [pnl_by_timestamp[t] for t in sorted(pnl_by_timestamp)]
         returns = [pnl_series[i] - pnl_series[i - 1] for i in range(1, len(pnl_series))]
         std = math.sqrt(sum((x - sum(returns) / len(returns)) ** 2 for x in returns) / len(returns)) if returns else 0.0
-        sharpe = (sum(returns) / std / 100) if std else 0.0
-
+        sharpe = ((sum(returns)/len(returns)) / std) * 100 if std else 0.0
+        
         print(*reversed(product_lines), sep="\n")
         print(f"Profit per-ts: {profit_per_timestep:,.4f}")
         print(f"Sharpe: {sharpe:,.4f}")
+        print(f"Total PnL: {total_profit:,.0f}")
         print()
 
     @staticmethod
@@ -48,7 +49,7 @@ class SummaryPrinter:
             pnl_series = [pnl_by_timestamp[t] for t in sorted(pnl_by_timestamp)]
             returns = [pnl_series[i] - pnl_series[i - 1] for i in range(1, len(pnl_series))]
             std = math.sqrt(sum((x - sum(returns) / len(returns)) ** 2 for x in returns) / len(returns)) if returns else 0.0
-            sharpe = (sum(returns) / std / 100) if std else 0.0
+            sharpe = ((sum(returns)/len(returns)) / std) * 100 if std else 0.0
 
             print(
                 f"Round {result.round_num} day {result.day_num}: "
@@ -56,7 +57,6 @@ class SummaryPrinter:
                 f"Sharpe: {sharpe:,.4f}",
                 f"Total PnL: {profit:,.0f}"
             )
-            print()
 
             total_profit += profit
             total_timesteps += num_timesteps
@@ -64,7 +64,7 @@ class SummaryPrinter:
 
         overall_profit_per_timestep = total_profit / total_timesteps * 100 if total_timesteps else 0.0
         overall_std = math.sqrt(sum((x - sum(all_returns) / len(all_returns)) ** 2 for x in all_returns) / len(all_returns)) if all_returns else 0.0
-        overall_sharpe = (sum(all_returns) / overall_std / 100) if overall_std else 0.0
+        overall_sharpe = ((sum(all_returns)/len(all_returns)) / overall_std) * 100 if overall_std else 0.0
 
         print(f"Profit per-ts: {overall_profit_per_timestep:,.4f}")
         print(f"Sharpe: {overall_sharpe:,.4f}")
