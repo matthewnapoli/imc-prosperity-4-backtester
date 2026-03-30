@@ -10,11 +10,10 @@ class SummaryPrinter:
 
         timestamps = {a.timestamp for a in result.activity_logs}
         num_timesteps = len(timestamps)
-        profit_per_timestep = total_profit / num_timesteps if num_timesteps else 0.0
+        profit_per_timestep = total_profit/num_timesteps*100 if num_timesteps else 0.0
 
         print(*reversed(product_lines), sep="\n")
-        print(f"Total profit: {total_profit:,.0f}")
-        print(f"Profit per timestep: {profit_per_timestep:,.4f}")
+        print(f"Profit per-ts: {profit_per_timestep:,.4f}")
 
 
     @staticmethod
@@ -30,18 +29,16 @@ class SummaryPrinter:
 
             timestamps = {a.timestamp for a in result.activity_logs}
             num_timesteps = len(timestamps)
-            profit_per_timestep = profit / num_timesteps if num_timesteps else 0.0
+            profit_per_timestep = profit / num_timesteps * 100 if num_timesteps else 0.0
 
             print(
                 f"Round {result.round_num} day {result.day_num}: "
-                f"{profit:,.0f} "
-                f"({profit_per_timestep:,.4f} per timestep)"
+                f"Profit per-ts: {profit_per_timestep:,.4f}"
             )
 
             total_profit += profit
             total_timesteps += num_timesteps
 
-        overall_profit_per_timestep = total_profit / total_timesteps if total_timesteps else 0.0
+        overall_profit_per_timestep = total_profit / total_timesteps * 100 if total_timesteps else 0.0
 
-        print(f"Total profit: {total_profit:,.0f}")
-        print(f"Overall profit per timestep: {overall_profit_per_timestep:,.4f}")
+        print(f"Profit per-ts: {overall_profit_per_timestep:,.4f}")
