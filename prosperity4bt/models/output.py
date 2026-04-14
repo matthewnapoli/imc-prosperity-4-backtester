@@ -76,6 +76,7 @@ class ActivityLogRow:
 @dataclass
 class TradeRow:
     trade: Trade
+    trade_type: str = "market"
 
     @property
     def timestamp(self) -> int:
@@ -90,7 +91,8 @@ class TradeRow:
                 self.trade.buyer,
                 self.trade.seller,
                 self.trade.timestamp + timestamp_offset,
-            )
+            ),
+            self.trade_type,
         )
 
     def to_dict(self):
@@ -102,6 +104,7 @@ class TradeRow:
             "currency": "XIRECS",
             "price": float(self.trade.price),
             "quantity": self.trade.quantity,
+            "tradeType": self.trade_type,
         }
 
     def __str__(self) -> str:
@@ -116,6 +119,7 @@ class TradeRow:
     "currency": "XIRECS",
     "price": {self.trade.price},
     "quantity": {self.trade.quantity},
+    "tradeType": "{self.trade_type}",
   }}
         """.strip()
         )
