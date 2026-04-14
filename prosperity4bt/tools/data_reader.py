@@ -104,6 +104,7 @@ class PackageResourcesReader(BackDataReader):
     def _read_file_content(self, path_parts: list[str]) -> ContextManager[Optional[Path]]:
         try:
             file_path = f"prosperity4bt.resources.{'.'.join(path_parts[:-1])}"
+            print(file_path)
             container = resources.files(file_path)
             file = container / path_parts[-1]
             if not file.is_file():
