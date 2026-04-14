@@ -29,7 +29,7 @@ class Visualizer(object):
         http_handler = partial(HTTPRequestHandler, directory=str(output_file.parent))
         http_server = CustomHTTPServer(("localhost", 0), http_handler)
         webbrowser.open(
-            f"https://kevin-fu1.github.io/imc-prosperity-4-visualizer/?open=http://localhost:{http_server.server_port}/{output_file.name}"
+            f"https://matthewnapoli.github.io/imc-prosperity-4-visualizer/visualizer/?open=http://localhost:{http_server.server_port}/{output_file.name}"
         )
         while not http_server.shutdown_flag:
             http_server.handle_request()

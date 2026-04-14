@@ -100,3 +100,5 @@ The backtester relies on a specific set of data models to process market informa
   **Output Log File:**
   
   ![Output Log File](images/out_put_log_file.png)
+
+Backtest outputs can also be opened directly in [Matthew Napoli's visualizer](https://matthewnapoli.github.io/imc-prosperity-4-visualizer/visualizer).
