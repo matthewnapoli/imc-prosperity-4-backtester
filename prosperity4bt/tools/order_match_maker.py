@@ -78,6 +78,8 @@ class OrderMatchMaker:
             return False
         if market_trade.trade.price == order.price:
             return self.trade_matching_mode == TradeMatchingMode.all
+        if self.trade_matching_mode == TradeMatchingMode.worse and self.__has_resting_buy_order_at_price(order):
+            return False
         return True
 
     def __create_sell_order(self, order: Order, volume: int, price: int, buyer: str):
@@ -93,7 +95,17 @@ class OrderMatchMaker:
             return False
         if market_trade.trade.price == order.price:
             return self.trade_matching_mode == TradeMatchingMode.all
+        if self.trade_matching_mode == TradeMatchingMode.worse and self.__has_resting_sell_order_at_price(order):
+            return False
         return True
+
+    def __has_resting_buy_order_at_price(self, order: Order) -> bool:
+        buy_orders = self.state.order_depths[order.symbol].buy_orders
+        return buy_orders.get(order.price, 0) > 0
+
+    def __has_resting_sell_order_at_price(self, order: Order) -> bool:
+        sell_orders = self.state.order_depths[order.symbol].sell_orders
+        return sell_orders.get(order.price, 0) < 0
 
     # deduct volume from orders. If the volume becomes 0 after deduction, then remove the order from the order dict.
     # orders is a dict of price -> volume.
