@@ -18,10 +18,11 @@ class ActivityLogCreator:
             row = self.data.prices[self.state.timestamp][product]
 
             product_profit_loss = self.data.profit_loss[product]
+            fair_value = row.fair_value if row.fair_value is not None else row.mid_price
 
             position = self.state.position.get(product, 0)
             if position != 0:
-                product_profit_loss += position * row.mid_price
+                product_profit_loss += position * fair_value
 
             bid_prices_len = len(row.bid_prices)
             bid_volumes_len = len(row.bid_volumes)
@@ -44,7 +45,7 @@ class ActivityLogCreator:
                 row.ask_volumes[1] if ask_volumes_len > 1 else "",
                 row.ask_prices[2] if ask_prices_len > 2 else "",
                 row.ask_volumes[2] if ask_volumes_len > 2 else "",
-                row.mid_price,
+                fair_value,
                 product_profit_loss,
             ]
 

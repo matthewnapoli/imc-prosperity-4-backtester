@@ -20,6 +20,7 @@ class PriceRow:
     ask_volumes: list[int]
     mid_price: float
     profit_loss: float
+    fair_value: float | None = None
 
     @classmethod
     def parse_from_str(cls, line: str):
@@ -34,6 +35,7 @@ class PriceRow:
             ask_volumes=cls.__get_column_values(columns, [10, 12, 14]),
             mid_price=float(columns[15]),
             profit_loss=float(columns[16]),
+            fair_value=float(columns[15]),
         )
 
     @staticmethod
@@ -56,6 +58,7 @@ class PriceRow:
             "ask_prices": self.ask_prices,
             "ask_volumes": self.ask_volumes,
             "mid_price": self.mid_price,
+            "fair_value": self.fair_value,
             "profit_loss": self.profit_loss
         }
 
@@ -107,6 +110,7 @@ class BacktestData:
     observations: dict[int, ObservationRow]
     products: list[Symbol]
     profit_loss: dict[Symbol, float]
+    fair_value_sources: dict[Symbol, str] | None = None
 
     def to_dict(self):
         return {
@@ -126,7 +130,8 @@ class BacktestData:
                 },
             "observations": { k: v.to_dic() for k, v in self.observations.items() },
             "products": self.products,
-            "profit_loss": self.profit_loss
+            "profit_loss": self.profit_loss,
+            "fair_value_sources": self.fair_value_sources or {},
         }
 
 

@@ -156,6 +156,7 @@ class ParquetResourcesReader(BackDataReader):
             raise ValueError(f"Prices data is not available for round {round_num} day {day_num}")
 
         trades = self.__get_trades(round_num, day_num)
+        fair_value_sources = self.__fair_value_sources(round_num, day_num)
 
         products = []
         prices_by_timestamp: dict[int, dict[Symbol, PriceRow]] = defaultdict(dict)
@@ -176,6 +177,7 @@ class ParquetResourcesReader(BackDataReader):
             observations={},
             products=products,
             profit_loss={product: 0.0 for product in products},
+            fair_value_sources=fair_value_sources,
         )
 
     def available_days(self, round: int) -> list[int]:
@@ -207,7 +209,9 @@ class ParquetResourcesReader(BackDataReader):
         rows = []
         for file in self.__matching_files(round_num, day_num, "prices"):
             table = self.__read_parquet(file)
-            for row in table.to_pylist():
+            table_rows = table.to_pylist()
+            fair_values = self.__fair_values(table, table_rows)
+            for row, fair_value in zip(table_rows, fair_values):
                 rows.append(
                     PriceRow(
                         day=int(row["day"]),
@@ -219,10 +223,20 @@ class ParquetResourcesReader(BackDataReader):
                         ask_volumes=self.__compact_ints(row, ["ask_volume_1", "ask_volume_2", "ask_volume_3"]),
                         mid_price=float(row["mid_price"]),
                         profit_loss=float(row["profit_and_loss"]),
+                        fair_value=fair_value,
                     )
                 )
 
         return rows
+
+    def __fair_value_sources(self, round_num: int, day_num: int) -> dict[Symbol, str]:
+        sources = {}
+        for file in self.__matching_files(round_num, day_num, "prices"):
+            table = self.__read_parquet(file)
+            product = file.parent.name
+            sources[product] = "precomputed fair_value" if "fair_value" in table.column_names else "mid_price fallback"
+
+        return sources
 
     def __get_trades(self, round_num: int, day_num: int) -> list[Trade]:
         rows = []
@@ -296,6 +310,22 @@ class ParquetResourcesReader(BackDataReader):
             ) from exc
 
         return pq.read_table(file)
+
+    @staticmethod
+    def __fair_values(table, rows: list[dict]) -> list[float]:
+        if "fair_value" not in table.column_names:
+            return [float(row["mid_price"]) for row in rows]
+
+        fair_values = []
+        last_fair_value = None
+        for row in rows:
+            raw_fair_value = row.get("fair_value")
+            if raw_fair_value is not None:
+                last_fair_value = float(raw_fair_value)
+
+            fair_values.append(last_fair_value if last_fair_value is not None else float(row["mid_price"]))
+
+        return fair_values
 
     @staticmethod
     def __compact_ints(row: dict, columns: list[str]) -> list[int]:

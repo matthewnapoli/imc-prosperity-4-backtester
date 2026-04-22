@@ -27,6 +27,7 @@ class TestRunner:
 
     def run(self):
         data = self.data_reader.read_from_file(self.round, self.day)
+        self.__print_fair_value_sources(data)
         state = TradingState(
             traderData="",
             timestamp=0,
@@ -51,6 +52,12 @@ class TestRunner:
             self.__match_orders(state, data, orders, result)
 
         return result
+
+    def __print_fair_value_sources(self, data: BacktestData) -> None:
+        fair_value_sources = data.fair_value_sources or {}
+        for product in data.products:
+            source = fair_value_sources.get(product, "mid_price fallback")
+            print(f"{product}: using {source} for fair_value and mark-to-market PnL")
 
     def __run_trader(self, state: TradingState, result: BacktestResult, timestamp: int) -> dict[Symbol, list[Order]]:
         stdout = StringIO()
