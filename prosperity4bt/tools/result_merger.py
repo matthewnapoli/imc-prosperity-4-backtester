@@ -31,7 +31,11 @@ class ResultMerger:
         profit_loss_offsets = self.__profile_loss_offset(a)
         activity_logs.extend([row.with_offset(timestamp_offset, profit_loss_offsets[row.symbol]) for row in b.activity_logs])
 
-        return BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades)
+        activity_value_column = a.activity_value_column
+        if a.activity_value_column != b.activity_value_column:
+            activity_value_column = "fair_value"
+
+        return BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades, activity_value_column)
 
 
     def __timestamp_offset(self, previous: BacktestResult) -> int:

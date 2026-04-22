@@ -69,8 +69,8 @@ class ActivityLogRow:
         return ";".join(map(str, self.columns))
 
     @staticmethod
-    def get_header_str() -> str:
-        return 'day;timestamp;product;bid_price_1;bid_volume_1;bid_price_2;bid_volume_2;bid_price_3;bid_volume_3;ask_price_1;ask_volume_1;ask_price_2;ask_volume_2;ask_price_3;ask_volume_3;fair_value;profit_and_loss'
+    def get_header_str(value_column: str="mid_price") -> str:
+        return f'day;timestamp;product;bid_price_1;bid_volume_1;bid_price_2;bid_volume_2;bid_price_3;bid_volume_3;ask_price_1;ask_volume_1;ask_price_2;ask_volume_2;ask_price_3;ask_volume_3;{value_column};profit_and_loss'
 
 
 @dataclass
@@ -132,13 +132,15 @@ class BacktestResult:
     sandbox_logs: list[SandboxLogRow]
     activity_logs: list[ActivityLogRow]
     trades: list[TradeRow]
+    activity_value_column: str
 
-    def __init__(self, round_num: int, day_num: int, sandbox_logs: list[SandboxLogRow]=None, activity_logs: list[ActivityLogRow]=None, trades: list[TradeRow]=None):
+    def __init__(self, round_num: int, day_num: int, sandbox_logs: list[SandboxLogRow]=None, activity_logs: list[ActivityLogRow]=None, trades: list[TradeRow]=None, activity_value_column: str="mid_price"):
         self.round_num = round_num
         self.day_num = day_num
         self.sandbox_logs = sandbox_logs if sandbox_logs is not None else []
         self.activity_logs = activity_logs if activity_logs is not None else []
         self.trades = trades if trades is not None else []
+        self.activity_value_column = activity_value_column
 
     # return a list of activities that happened at the end of the day, i.e. last timestamp
     def final_activities(self) -> list[ActivityLogRow]:
@@ -149,7 +151,7 @@ class BacktestResult:
     def to_dict(self) -> dict:
         return {
             "submissionId": str(uuid.uuid4()),
-            "activitiesLog": ActivityLogRow.get_header_str() + '\n' +'\n'.join([str(al) for al in self.activity_logs]),
+            "activitiesLog": ActivityLogRow.get_header_str(self.activity_value_column) + '\n' +'\n'.join([str(al) for al in self.activity_logs]),
             "logs": [sl.to_dict() for sl in self.sandbox_logs],
             "tradeHistory": [t.to_dict() for t in self.trades]
         }

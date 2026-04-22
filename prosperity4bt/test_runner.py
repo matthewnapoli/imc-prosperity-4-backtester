@@ -38,7 +38,7 @@ class TestRunner:
             position={},
             observations=Observation({}, {}),
         )
-        result = BacktestResult(data.round_num, data.day_num)
+        result = BacktestResult(data.round_num, data.day_num, activity_value_column=self.__activity_value_column(data))
 
         timestamps = sorted(data.prices.keys())
         timestamps_iterator = tqdm(timestamps, ascii=True) if self.show_progress_bar else timestamps
@@ -58,6 +58,14 @@ class TestRunner:
         for product in data.products:
             source = fair_value_sources.get(product, "mid_price fallback")
             print(f"{product}: using {source} for fair_value and mark-to-market PnL")
+
+    def __activity_value_column(self, data: BacktestData) -> str:
+        fair_value_sources = data.fair_value_sources or {}
+        for product in data.products:
+            if fair_value_sources.get(product) == "precomputed fair_value":
+                return "fair_value"
+
+        return "mid_price"
 
     def __run_trader(self, state: TradingState, result: BacktestResult, timestamp: int) -> dict[Symbol, list[Order]]:
         stdout = StringIO()
