@@ -1,13 +1,13 @@
 import sys
 from importlib import import_module, reload
 from pathlib import Path
-from typing import Any, Optional
-from prosperity4bt.tools.data_reader import BackDataReader, PackageResourcesReader
+from typing import Any
+from prosperity4bt.tools.data_reader import BackDataReader, ParquetResourcesReader
 from prosperity4bt.models.output import BacktestResult
 from prosperity4bt.tools.output_file_writer import OutputFileWriter
 from prosperity4bt.tools.result_merger import ResultMerger
 from prosperity4bt.tools.summary_printer import SummaryPrinter
-from prosperity4bt.models.test_options import TestOptions, RoundDayOption
+from prosperity4bt.models.test_options import TestOptions
 from prosperity4bt.test_runner import TestRunner
 from prosperity4bt.tools.visualizer import Visualizer
 
@@ -20,20 +20,29 @@ class BackTester:
         print(f"running algorithm '{self.options.algorithm_path}'...")
 
         trader_module = self.__load_algorithm()
-        data_reader = self.__get_data_reader(self.options.back_data_dir)
-        round_days_options = RoundDayOption.parse(self.options.round_day, data_reader)
+        data_reader = self.__get_data_reader()
+        days = self.__resolve_days(data_reader)
+        products = self.__resolve_products(data_reader)
         merger = ResultMerger(self.options.merge_timestamps, self.options.merge_profit_loss)
 
         results = []
-        for round in round_days_options:
-            for day in round.days:
-                print(f"Backtesting {self.options.algorithm_path} for round: {round.round} day: {day}")
-                result = self.__run_test(trader_module, data_reader, round.round, day)
+        for day in days:
+            for product in products:
+                product_data_reader = self.__get_data_reader([product])
+                print(
+                    f"Backtesting {self.options.algorithm_path} "
+                    f"for round: {self.options.round_num} day: {day} product: {product}"
+                )
+                result = self.__run_test(trader_module, product_data_reader, self.options.round_num, day)
                 results.append(result)
                 SummaryPrinter.print_day_summary(result)
 
-            if len(round.days) > 1:
-                SummaryPrinter.print_overall_summary(results)
+        if len(results) == 0:
+            print("Error: no matching backtest data found")
+            sys.exit(1)
+
+        if len(results) > 1:
+            SummaryPrinter.print_overall_summary(results)
 
         merged_result = merger.merge(results)
 
@@ -60,12 +69,44 @@ class BackTester:
         return trader_module
 
 
-    def __get_data_reader(self, data_dir: Optional[Path]) -> BackDataReader:
-        if data_dir is not None:
-            # return FileSystemReader(data_root)
-            return None
-        else:
-            return PackageResourcesReader()
+    def __get_data_reader(self, products: list[str] | None=None) -> BackDataReader:
+        return ParquetResourcesReader(self.options.back_data_dir, products)
+
+    def __resolve_days(self, data_reader: BackDataReader) -> list[int]:
+        available_days = data_reader.available_days(self.options.round_num)
+        if len(available_days) == 0:
+            print(f"Error: no data found for round {self.options.round_num}")
+            sys.exit(1)
+
+        if self.options.day == "all":
+            return available_days
+
+        try:
+            day = int(self.options.day)
+        except ValueError:
+            print("Error: day must be an integer or 'all'")
+            sys.exit(1)
+
+        if day not in available_days:
+            print(f"Error: no data found for round {self.options.round_num} day {day}")
+            sys.exit(1)
+
+        return [day]
+
+    def __resolve_products(self, data_reader: ParquetResourcesReader) -> list[str]:
+        available_products = data_reader.available_products(self.options.round_num)
+        if len(available_products) == 0:
+            print(f"Error: no products found for round {self.options.round_num}")
+            sys.exit(1)
+
+        if self.options.product == "all":
+            return available_products
+
+        if self.options.product not in available_products:
+            print(f"Error: no data found for round {self.options.round_num} product {self.options.product}")
+            sys.exit(1)
+
+        return [self.options.product]
 
 
     def __run_test(self, trader_module, data_reader: BackDataReader, round: int, day: int) -> BacktestResult:

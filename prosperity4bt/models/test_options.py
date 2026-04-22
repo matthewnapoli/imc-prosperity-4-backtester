@@ -10,9 +10,11 @@ class TradeMatchingMode(str, Enum):
 
 
 class TestOptions:
-    def __init__(self, algorithm_path: Path, round_day: list[str], output_file: Path):
+    def __init__(self, algorithm_path: Path, round_num: int, day: str, product: str, output_file: Path):
         self.algorithm_path = algorithm_path
-        self.round_day = round_day
+        self.round_num = round_num
+        self.day = day
+        self.product = product
         self.output_file = output_file
         self.back_data_dir = None
         self.print_output = False

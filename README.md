@@ -13,14 +13,24 @@ This repository contains a Python-based backtester designed in preparation for t
 
 **Basic usage:**
 
-Run the backtester on an algorithm using all data from round 0
+Run the backtester on an algorithm using all days and products from round 0
 ```bash
  $ python -m prosperity4bt <path to algorithm file> 0
  ```
 
-Run the backtester on an algorithm using all data from round 0, day '-2'
+Run the backtester on an algorithm using all products from round 1, day '-2'
 ```bash
- $ python -m prosperity4bt <path to algorithm file> 0--2
+ $ python -m prosperity4bt <path to algorithm file> 1 -2
+ ```
+
+Run the backtester on an algorithm using one product from all days in round 1
+```bash
+ $ python -m prosperity4bt <path to algorithm file> 1 all INTARIAN_PEPPER_ROOT
+ ```
+
+Run the backtester on an algorithm using one product from round 1, day '-2'
+```bash
+ $ python -m prosperity4bt <path to algorithm file> 1 -2 INTARIAN_PEPPER_ROOT
  ```
 
 If you see: `No module named 'datamodel'`, set PYTHONPATH to the folder containing datamodel.py:  
