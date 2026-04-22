@@ -37,7 +37,7 @@ class TestOptions:
         self.print_output = False
         self.trade_matching_mode = TradeMatchingMode.all
         self.show_progress = False
-        self.merge_profit_loss = False
+        self.merge_profit_loss = True
         self.show_visualizer = False
         self.merge_timestamps = True
 

@@ -20,6 +20,11 @@ class ResultMerger:
 
 
     def __merge_results(self, a: BacktestResult, b: BacktestResult) -> BacktestResult:
+        if b.day_num <= a.last_day_num:
+            raise ValueError(
+                f"Cannot merge non-increasing day results: previous day {a.last_day_num}, next day {b.day_num}"
+            )
+
         sandbox_logs = a.sandbox_logs[:]
         activity_logs = a.activity_logs[:]
         trades = a.trades[:]
@@ -35,7 +40,9 @@ class ResultMerger:
         if a.activity_value_column != b.activity_value_column:
             activity_value_column = "fair_value"
 
-        return BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades, activity_value_column)
+        result = BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades, activity_value_column)
+        result.last_day_num = b.last_day_num
+        return result
 
 
     def __timestamp_offset(self, previous: BacktestResult) -> int:

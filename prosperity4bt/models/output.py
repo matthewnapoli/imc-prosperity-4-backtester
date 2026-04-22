@@ -129,6 +129,7 @@ class TradeRow:
 class BacktestResult:
     round_num: int
     day_num: int
+    last_day_num: int
     sandbox_logs: list[SandboxLogRow]
     activity_logs: list[ActivityLogRow]
     trades: list[TradeRow]
@@ -137,6 +138,7 @@ class BacktestResult:
     def __init__(self, round_num: int, day_num: int, sandbox_logs: list[SandboxLogRow]=None, activity_logs: list[ActivityLogRow]=None, trades: list[TradeRow]=None, activity_value_column: str="mid_price"):
         self.round_num = round_num
         self.day_num = day_num
+        self.last_day_num = day_num
         self.sandbox_logs = sandbox_logs if sandbox_logs is not None else []
         self.activity_logs = activity_logs if activity_logs is not None else []
         self.trades = trades if trades is not None else []
