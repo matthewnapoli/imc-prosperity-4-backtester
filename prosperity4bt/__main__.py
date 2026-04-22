@@ -4,7 +4,7 @@ from typer import Argument, Context, Option, Typer
 from typing import Annotated, Optional
 from pathlib import Path
 from prosperity4bt.back_tester import BackTester
-from prosperity4bt.models.test_options import TestOptions, TradeMatchingMode
+from prosperity4bt.models.test_options import TestOptions, TradeMatchingMode, canonical_product
 
 app = Typer(context_settings={"help_option_names": ["--help", "-h"], "allow_extra_args": True, "ignore_unknown_options": True})
 
@@ -52,9 +52,13 @@ def __parse_day_product(args: list[str]) -> tuple[str, str]:
             sys.exit(1)
 
     day = args[0].lower() if len(args) >= 1 else "all"
-    product = args[1] if len(args) == 2 else "all"
+    product = __parse_product(args[1]) if len(args) == 2 else "all"
 
     return day, product
+
+
+def __parse_product(product: str) -> str:
+    return canonical_product(product)
 
 
 def __parse_out(out: Optional[Path], no_out: bool) -> Optional[Path]:

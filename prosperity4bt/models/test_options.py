@@ -9,12 +9,29 @@ class TradeMatchingMode(str, Enum):
     none = "none"
 
 
+PRODUCT_ALIASES = {
+    "PEPPER": "INTARIAN_PEPPER_ROOT",
+    "OSMIUM": "ASH_COATED_OSMIUM",
+    "ASH": "ASH_COATED_OSMIUM",
+    "EMERALD": "EMERALDS",
+    "TOMATO": "TOMATOES",
+}
+
+
+def canonical_product(product: str) -> str:
+    if product.lower() == "all":
+        return "all"
+
+    normalized_product = product.upper()
+    return PRODUCT_ALIASES.get(normalized_product, normalized_product)
+
+
 class TestOptions:
     def __init__(self, algorithm_path: Path, round_num: int, day: str, product: str, output_file: Path):
         self.algorithm_path = algorithm_path
         self.round_num = round_num
         self.day = day
-        self.product = product
+        self.product = canonical_product(product)
         self.output_file = output_file
         self.back_data_dir = None
         self.print_output = False
