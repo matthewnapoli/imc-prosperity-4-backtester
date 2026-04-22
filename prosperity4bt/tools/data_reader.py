@@ -3,6 +3,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from importlib import resources
 from pathlib import Path
+import re
 from typing import ContextManager, Optional
 from prosperity4bt.datamodel import Trade, Symbol
 from prosperity4bt.models.input import PriceRow, ObservationRow, BacktestData
@@ -101,6 +102,13 @@ class BackDataReader:
 
 
 class PackageResourcesReader(BackDataReader):
+    def available_days(self, round: int) -> list[int]:
+        discovered_days = self.__available_days_from_resources(round)
+        if len(discovered_days) > 0:
+            return discovered_days
+
+        return super().available_days(round)
+
     def _read_file_content(self, path_parts: list[str]) -> ContextManager[Optional[Path]]:
         try:
             file_path = f"prosperity4bt.resources.{'.'.join(path_parts[:-1])}"
@@ -112,6 +120,21 @@ class PackageResourcesReader(BackDataReader):
             return resources.as_file(file)
         except Exception:
             return wrap_in_context_manager(None)
+
+    def __available_days_from_resources(self, round: int) -> list[int]:
+        try:
+            container = resources.files(f"prosperity4bt.resources.round{round}")
+        except Exception:
+            return []
+
+        pattern = re.compile(rf"^prices_round_{round}_day_(-?\d+)\.csv$")
+        days = []
+        for file in container.iterdir():
+            match = pattern.match(file.name)
+            if match is not None:
+                days.append(int(match.group(1)))
+
+        return sorted(days)
 
 
 @contextmanager
