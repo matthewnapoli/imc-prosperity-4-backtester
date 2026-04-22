@@ -20,7 +20,7 @@ class ResultMerger:
 
 
     def __merge_results(self, a: BacktestResult, b: BacktestResult) -> BacktestResult:
-        if b.day_num <= a.last_day_num:
+        if b.day_num < a.last_day_num:
             raise ValueError(
                 f"Cannot merge non-increasing day results: previous day {a.last_day_num}, next day {b.day_num}"
             )
@@ -29,7 +29,7 @@ class ResultMerger:
         activity_logs = a.activity_logs[:]
         trades = a.trades[:]
 
-        timestamp_offset = self.__timestamp_offset(a)
+        timestamp_offset = self.__timestamp_offset(a, b)
         sandbox_logs.extend([row.with_offset(timestamp_offset) for row in b.sandbox_logs])
         trades.extend([row.with_offset(timestamp_offset) for row in b.trades])
 
@@ -45,9 +45,12 @@ class ResultMerger:
         return result
 
 
-    def __timestamp_offset(self, previous: BacktestResult) -> int:
+    def __timestamp_offset(self, previous: BacktestResult, next_result: BacktestResult) -> int:
         if not self.merge_timestamps:
             return 0
+        if next_result.day_num == previous.last_day_num:
+            return 0
+
         last_timestamp = previous.activity_logs[-1].timestamp
         return last_timestamp + 100
 

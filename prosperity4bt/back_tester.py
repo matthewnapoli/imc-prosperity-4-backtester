@@ -23,11 +23,11 @@ class BackTester:
         data_reader = self.__get_data_reader()
         days = self.__resolve_days(data_reader)
         products = self.__resolve_products(data_reader)
-        self.__validate_day_product_selection(days, products)
         merger = ResultMerger(self.options.merge_timestamps, self.options.merge_profit_loss)
 
         results = []
         for day in days:
+            day_results = []
             for product in products:
                 product_data_reader = self.__get_data_reader([product])
                 print(
@@ -35,8 +35,13 @@ class BackTester:
                     f"for round: {self.options.round_num} day: {day} product: {product}"
                 )
                 result = self.__run_test(trader_module, product_data_reader, self.options.round_num, day)
-                results.append(result)
+                day_results.append(result)
                 SummaryPrinter.print_day_summary(result)
+
+            if len(day_results) == 1:
+                results.append(day_results[0])
+            else:
+                results.append(ResultMerger(merge_timestamps=False, merge_profit_loss=False).merge(day_results))
 
         if len(results) == 0:
             print("Error: no matching backtest data found")
@@ -108,15 +113,6 @@ class BackTester:
             sys.exit(1)
 
         return [self.options.product]
-
-    def __validate_day_product_selection(self, days: list[int], products: list[str]) -> None:
-        if len(products) > 1:
-            print(
-                "Error: cannot merge multiple product runs for the same day into one log. "
-                "Run one product at a time, e.g. pass PEPPER or OSMIUM."
-            )
-            sys.exit(1)
-
 
     def __run_test(self, trader_module, data_reader: BackDataReader, round: int, day: int) -> BacktestResult:
         reload(trader_module)
