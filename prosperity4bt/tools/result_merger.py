@@ -20,7 +20,7 @@ class ResultMerger:
 
 
     def __merge_results(self, a: BacktestResult, b: BacktestResult) -> BacktestResult:
-        if b.day_num < a.last_day_num:
+        if b.day_num <= a.last_day_num:
             raise ValueError(
                 f"Cannot merge non-increasing day results: previous day {a.last_day_num}, next day {b.day_num}"
             )
@@ -47,8 +47,6 @@ class ResultMerger:
 
     def __timestamp_offset(self, previous: BacktestResult, next_result: BacktestResult) -> int:
         if not self.merge_timestamps:
-            return 0
-        if next_result.day_num == previous.last_day_num:
             return 0
 
         last_timestamp = previous.activity_logs[-1].timestamp

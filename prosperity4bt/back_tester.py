@@ -27,21 +27,15 @@ class BackTester:
 
         results = []
         for day in days:
-            day_results = []
-            for product in products:
-                product_data_reader = self.__get_data_reader([product])
-                print(
-                    f"Backtesting {self.options.algorithm_path} "
-                    f"for round: {self.options.round_num} day: {day} product: {product}"
-                )
-                result = self.__run_test(trader_module, product_data_reader, self.options.round_num, day)
-                day_results.append(result)
-                SummaryPrinter.print_day_summary(result)
-
-            if len(day_results) == 1:
-                results.append(day_results[0])
-            else:
-                results.append(ResultMerger(merge_timestamps=False, merge_profit_loss=False).merge(day_results))
+            day_data_reader = self.__get_data_reader(products)
+            product_label = "all" if self.options.product == "all" else products[0]
+            print(
+                f"Backtesting {self.options.algorithm_path} "
+                f"for round: {self.options.round_num} day: {day} product: {product_label}"
+            )
+            result = self.__run_test(trader_module, day_data_reader, self.options.round_num, day)
+            results.append(result)
+            SummaryPrinter.print_day_summary(result)
 
         if len(results) == 0:
             print("Error: no matching backtest data found")
