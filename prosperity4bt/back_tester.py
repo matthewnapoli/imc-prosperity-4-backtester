@@ -110,8 +110,8 @@ class BackTester:
 
     def __run_test(self, trader_module, data_reader: BackDataReader, round: int, day: int) -> BacktestResult:
         reload(trader_module)
+        self.__configure_algorithm_mode(trader_module)
         trader = trader_module.Trader()
-        self.__configure_algorithm_mode(trader_module, trader)
         test_runner = TestRunner(
             trader,
             data_reader,
@@ -123,22 +123,38 @@ class BackTester:
         result = test_runner.run()
         return result
 
-    def __configure_algorithm_mode(self, trader_module, trader) -> None:
-        mode = self.options.run_mode
+    def __configure_algorithm_mode(self, trader_module) -> None:
+        if not hasattr(trader_module, "TRADER_MODE"):
+            print(
+                f"Error: {self.options.algorithm_path} must define a module-level TRADER_MODE "
+                f"(for example TRADER_MODE = SUBMISSION_MODE)"
+            )
+            sys.exit(1)
 
-        trader_module.BT_MODE = mode.value
-        trader_module.IS_BACKTEST = mode == RunMode.bt
-        trader_module.IS_SUBMISSION = mode == RunMode.submission
-        trader_module.IS_GRID_SEARCH = mode == RunMode.gs
+        mode = self.__resolve_algorithm_mode(trader_module)
 
-        trader.mode = mode.value
-        trader.bt = mode == RunMode.bt
-        trader.submission = mode == RunMode.submission
-        trader.gs = mode == RunMode.gs
-        trader.grid_search = trader.gs
-        trader.is_backtest = trader.bt
-        trader.is_submission = trader.submission
-        trader.is_grid_search = trader.gs
+        if hasattr(trader_module, "VALID_TRADER_MODES") and mode not in trader_module.VALID_TRADER_MODES:
+            print(
+                f"Error: TRADER_MODE {mode!r} is not valid for {self.options.algorithm_path}. "
+                f"Expected one of {sorted(trader_module.VALID_TRADER_MODES)!r}"
+            )
+            sys.exit(1)
+
+        if hasattr(trader_module, "set_trader_mode") and callable(trader_module.set_trader_mode):
+            trader_module.set_trader_mode(mode)
+        else:
+            trader_module.TRADER_MODE = mode
+
+    def __resolve_algorithm_mode(self, trader_module) -> str:
+        if self.options.run_mode is None:
+            return trader_module.TRADER_MODE
+
+        mode_names = {
+            RunMode.bt: getattr(trader_module, "BACKTEST_MODE", "backtest_mode"),
+            RunMode.submission: getattr(trader_module, "SUBMISSION_MODE", "submission_mode"),
+            RunMode.gs: getattr(trader_module, "GRID_SEARCH_MODE", "grid_search_mode"),
+        }
+        return mode_names[self.options.run_mode]
 
 
     def __format_path(self, path: Path) -> str:

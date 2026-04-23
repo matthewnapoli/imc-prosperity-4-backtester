@@ -17,7 +17,7 @@ def run(
     no_out: Annotated[bool, Option("--no-out", help="Skip saving output log.")] = False,
     data: Annotated[Optional[Path], Option(help="Path to a product-partitioned Parquet resources directory.", show_default=False, exists=True, file_okay=False, dir_okay=True, resolve_path=True)] = None,
     print_output: Annotated[bool, Option("--print", help="Print the trader's output to stdout while it's running.")] = False,
-    bt: Annotated[bool, Option("--bt", help="Run the trader in backtest mode (default).")] = False,
+    bt: Annotated[bool, Option("--bt", help="Override the trader's TRADER_MODE to backtest mode.")] = False,
     submission: Annotated[bool, Option("--submission", help="Run the trader in submission mode.")] = False,
     gs: Annotated[bool, Option("--gs", help="Run the trader in grid-search mode.")] = False,
     match_trades: Annotated[TradeMatchingMode, Option(help="How to match orders against market trades. 'all' matches trades with prices equal to or worse than your quotes, 'worse' matches trades with prices worse than your quotes, 'none' does not match trades against orders at all.")] = TradeMatchingMode.worse,
@@ -45,7 +45,7 @@ def run(
     back_tester.run()
 
 
-def __parse_run_mode(bt: bool, submission: bool, gs: bool) -> RunMode:
+def __parse_run_mode(bt: bool, submission: bool, gs: bool) -> Optional[RunMode]:
     selected_modes = [
         mode
         for mode, enabled in (
@@ -61,7 +61,7 @@ def __parse_run_mode(bt: bool, submission: bool, gs: bool) -> RunMode:
         sys.exit(1)
 
     if len(selected_modes) == 0:
-        return RunMode.bt
+        return None
 
     return selected_modes[0]
 

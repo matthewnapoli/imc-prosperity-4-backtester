@@ -33,8 +33,10 @@ Run the backtester on an algorithm using one product from round 1, day '-2'
  $ python -m prosperity4bt <path to algorithm file> 1 -2 INTARIAN_PEPPER_ROOT
  ```
 
-Select the trader mode explicitly when needed. Backtest mode is the default:
+Your algorithm must define a module-level `TRADER_MODE` (for example `TRADER_MODE = SUBMISSION_MODE`).
+The backtester uses that value by default, and CLI flags override it when needed:
 ```bash
+ $ python -m prosperity4bt <path to algorithm file> 1
  $ python -m prosperity4bt <path to algorithm file> 1 --bt
  $ python -m prosperity4bt <path to algorithm file> 1 --submission
  $ python -m prosperity4bt <path to algorithm file> 1 --gs

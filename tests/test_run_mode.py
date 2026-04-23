@@ -22,27 +22,67 @@ class FakeTrader:
 
 
 class RunModeTests(unittest.TestCase):
-    def test_configure_algorithm_mode_sets_module_and_trader_flags(self):
+    def test_configure_algorithm_mode_uses_algorithm_default_when_no_cli_override(self):
         options = TestOptions(Path("algo.py"), 0, "all", "all", None)
-        options.run_mode = RunMode.submission
         back_tester = BackTester(options)
 
-        trader_module = types.SimpleNamespace(Trader=FakeTrader)
-        trader = FakeTrader()
-        back_tester._BackTester__configure_algorithm_mode(trader_module, trader)
+        trader_module = types.SimpleNamespace(
+            Trader=FakeTrader,
+            TRADER_MODE="submission_mode",
+            VALID_TRADER_MODES={"submission_mode", "backtest_mode", "grid_search_mode"},
+        )
+        back_tester._BackTester__configure_algorithm_mode(trader_module)
 
-        self.assertEqual(trader_module.BT_MODE, "submission")
-        self.assertFalse(trader_module.IS_BACKTEST)
-        self.assertTrue(trader_module.IS_SUBMISSION)
-        self.assertFalse(trader_module.IS_GRID_SEARCH)
-        self.assertEqual(trader.mode, "submission")
-        self.assertFalse(trader.bt)
-        self.assertTrue(trader.submission)
-        self.assertFalse(trader.gs)
-        self.assertFalse(trader.grid_search)
-        self.assertFalse(trader.is_backtest)
-        self.assertTrue(trader.is_submission)
-        self.assertFalse(trader.is_grid_search)
+        self.assertEqual(trader_module.TRADER_MODE, "submission_mode")
+
+    def test_configure_algorithm_mode_cli_override_uses_algorithm_constants(self):
+        options = TestOptions(Path("algo.py"), 0, "all", "all", None)
+        options.run_mode = RunMode.gs
+        back_tester = BackTester(options)
+
+        trader_module = types.SimpleNamespace(
+            Trader=FakeTrader,
+            TRADER_MODE="submission_mode",
+            SUBMISSION_MODE="submission_mode",
+            BACKTEST_MODE="backtest_mode",
+            GRID_SEARCH_MODE="grid_search_mode",
+            VALID_TRADER_MODES={"submission_mode", "backtest_mode", "grid_search_mode"},
+        )
+        back_tester._BackTester__configure_algorithm_mode(trader_module)
+
+        self.assertEqual(trader_module.TRADER_MODE, "grid_search_mode")
+
+    def test_configure_algorithm_mode_prefers_setter_when_present(self):
+        options = TestOptions(Path("algo.py"), 0, "all", "all", None)
+        options.run_mode = RunMode.bt
+        back_tester = BackTester(options)
+
+        trader_module = types.SimpleNamespace(
+            Trader=FakeTrader,
+            TRADER_MODE="submission_mode",
+            BACKTEST_MODE="backtest_mode",
+            VALID_TRADER_MODES={"submission_mode", "backtest_mode"},
+        )
+        trader_module.set_calls = []
+
+        def set_trader_mode(mode: str) -> None:
+            trader_module.set_calls.append(mode)
+            trader_module.TRADER_MODE = mode
+
+        trader_module.set_trader_mode = set_trader_mode
+
+        back_tester._BackTester__configure_algorithm_mode(trader_module)
+
+        self.assertEqual(trader_module.set_calls, ["backtest_mode"])
+        self.assertEqual(trader_module.TRADER_MODE, "backtest_mode")
+
+    def test_configure_algorithm_mode_requires_trader_mode(self):
+        options = TestOptions(Path("algo.py"), 0, "all", "all", None)
+        back_tester = BackTester(options)
+        trader_module = types.SimpleNamespace(Trader=FakeTrader)
+
+        with self.assertRaises(SystemExit):
+            back_tester._BackTester__configure_algorithm_mode(trader_module)
 
 
 if __name__ == "__main__":
