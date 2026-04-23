@@ -7,7 +7,7 @@ from prosperity4bt.models.output import BacktestResult
 from prosperity4bt.tools.output_file_writer import OutputFileWriter
 from prosperity4bt.tools.result_merger import ResultMerger
 from prosperity4bt.tools.summary_printer import SummaryPrinter
-from prosperity4bt.models.test_options import TestOptions
+from prosperity4bt.models.test_options import RunMode, TestOptions
 from prosperity4bt.test_runner import TestRunner
 from prosperity4bt.tools.visualizer import Visualizer
 
@@ -110,8 +110,10 @@ class BackTester:
 
     def __run_test(self, trader_module, data_reader: BackDataReader, round: int, day: int) -> BacktestResult:
         reload(trader_module)
+        trader = trader_module.Trader()
+        self.__configure_algorithm_mode(trader_module, trader)
         test_runner = TestRunner(
-            trader_module.Trader(),
+            trader,
             data_reader,
             round,
             day,
@@ -120,6 +122,23 @@ class BackTester:
             self.options.trade_matching_mode)
         result = test_runner.run()
         return result
+
+    def __configure_algorithm_mode(self, trader_module, trader) -> None:
+        mode = self.options.run_mode
+
+        trader_module.BT_MODE = mode.value
+        trader_module.IS_BACKTEST = mode == RunMode.bt
+        trader_module.IS_SUBMISSION = mode == RunMode.submission
+        trader_module.IS_GRID_SEARCH = mode == RunMode.gs
+
+        trader.mode = mode.value
+        trader.bt = mode == RunMode.bt
+        trader.submission = mode == RunMode.submission
+        trader.gs = mode == RunMode.gs
+        trader.grid_search = trader.gs
+        trader.is_backtest = trader.bt
+        trader.is_submission = trader.submission
+        trader.is_grid_search = trader.gs
 
 
     def __format_path(self, path: Path) -> str:

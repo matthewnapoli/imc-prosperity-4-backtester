@@ -4,7 +4,7 @@ from typer import Argument, Context, Option, Typer
 from typing import Annotated, Optional
 from pathlib import Path
 from prosperity4bt.back_tester import BackTester
-from prosperity4bt.models.test_options import TestOptions, TradeMatchingMode, canonical_product
+from prosperity4bt.models.test_options import RunMode, TestOptions, TradeMatchingMode, canonical_product
 
 app = Typer(context_settings={"help_option_names": ["--help", "-h"], "allow_extra_args": True, "ignore_unknown_options": True})
 
@@ -17,6 +17,9 @@ def run(
     no_out: Annotated[bool, Option("--no-out", help="Skip saving output log.")] = False,
     data: Annotated[Optional[Path], Option(help="Path to a product-partitioned Parquet resources directory.", show_default=False, exists=True, file_okay=False, dir_okay=True, resolve_path=True)] = None,
     print_output: Annotated[bool, Option("--print", help="Print the trader's output to stdout while it's running.")] = False,
+    bt: Annotated[bool, Option("--bt", help="Run the trader in backtest mode (default).")] = False,
+    submission: Annotated[bool, Option("--submission", help="Run the trader in submission mode.")] = False,
+    gs: Annotated[bool, Option("--gs", help="Run the trader in grid-search mode.")] = False,
     match_trades: Annotated[TradeMatchingMode, Option(help="How to match orders against market trades. 'all' matches trades with prices equal to or worse than your quotes, 'worse' matches trades with prices worse than your quotes, 'none' does not match trades against orders at all.")] = TradeMatchingMode.worse,
     no_progress: Annotated[bool, Option("--no-progress", help="Don't show progress bars.")] = False,
     no_merge_pnl: Annotated[bool, Option("--no-merge-pnl", help="Don't carry profit and loss forward across merged days.")] = False,
@@ -29,6 +32,7 @@ def run(
 
     day, product = __parse_day_product(ctx.args)
     options = TestOptions(algorithm, round_num, day, product, __parse_out(out, no_out))
+    options.run_mode = __parse_run_mode(bt, submission, gs)
     options.back_data_dir = data
     options.print_output = print_output
     options.trade_matching_mode = match_trades
@@ -39,6 +43,27 @@ def run(
 
     back_tester = BackTester(options)
     back_tester.run()
+
+
+def __parse_run_mode(bt: bool, submission: bool, gs: bool) -> RunMode:
+    selected_modes = [
+        mode
+        for mode, enabled in (
+            (RunMode.bt, bt),
+            (RunMode.submission, submission),
+            (RunMode.gs, gs),
+        )
+        if enabled
+    ]
+
+    if len(selected_modes) > 1:
+        print("Error: --bt, --submission, and --gs are mutually exclusive")
+        sys.exit(1)
+
+    if len(selected_modes) == 0:
+        return RunMode.bt
+
+    return selected_modes[0]
 
 
 def __parse_day_product(args: list[str]) -> tuple[str, str]:

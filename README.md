@@ -33,6 +33,13 @@ Run the backtester on an algorithm using one product from round 1, day '-2'
  $ python -m prosperity4bt <path to algorithm file> 1 -2 INTARIAN_PEPPER_ROOT
  ```
 
+Select the trader mode explicitly when needed. Backtest mode is the default:
+```bash
+ $ python -m prosperity4bt <path to algorithm file> 1 --bt
+ $ python -m prosperity4bt <path to algorithm file> 1 --submission
+ $ python -m prosperity4bt <path to algorithm file> 1 --gs
+ ```
+
 If you see: `No module named 'datamodel'`, set PYTHONPATH to the folder containing datamodel.py:  
 ```bash
  $env:PYTHONPATH="<path to>\imc-prosperity-4-backtester\prosperity4bt"

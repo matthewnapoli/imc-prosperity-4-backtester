@@ -3,6 +3,12 @@ from enum import Enum
 from prosperity4bt.tools.data_reader import BackDataReader
 
 
+class RunMode(str, Enum):
+    bt = "bt"
+    submission = "submission"
+    gs = "gs"
+
+
 class TradeMatchingMode(str, Enum):
     all = "all"
     worse = "worse"
@@ -33,6 +39,7 @@ class TestOptions:
         self.day = day
         self.product = canonical_product(product)
         self.output_file = output_file
+        self.run_mode = RunMode.bt
         self.back_data_dir = None
         self.print_output = False
         self.trade_matching_mode = TradeMatchingMode.all
