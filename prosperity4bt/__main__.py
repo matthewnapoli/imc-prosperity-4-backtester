@@ -12,11 +12,12 @@ app = Typer(context_settings={"help_option_names": ["--help", "-h"], "allow_extr
 def run(
     ctx: Context,
     algorithm: Annotated[Path, Argument(help="Path to the Python file containing the algorithm to backtest.", show_default=False,exists=True, file_okay=True, dir_okay=False, resolve_path=True)],
-    round_num: Annotated[int, Argument(help="Round number to backtest. Optionally pass DAY and PRODUCT after it. DAY and PRODUCT default to 'all'.", show_default=False)],
+    round_num: Annotated[int, Argument(help="Round number to backtest. Optionally pass DAY and PRODUCT after it. DAY defaults to all available days except 9 unless --all is used.", show_default=False)],
     out: Annotated[Optional[Path], Option(help="File to save output to (defaults to backtests/<timestamp>.log, or .parquet in --gs mode).", show_default=False, dir_okay=False, resolve_path=True)] = None,
     no_out: Annotated[bool, Option("--no-out", help="Skip saving output log.")] = False,
     data: Annotated[Optional[Path], Option(help="Path to a product-partitioned Parquet resources directory.", show_default=False, exists=True, file_okay=False, dir_okay=True, resolve_path=True)] = None,
     print_output: Annotated[bool, Option("--print", help="Print the trader's output to stdout while it's running.")] = False,
+    all_days: Annotated[bool, Option("--all", help="Use all available days, including day 9.")] = False,
     bt: Annotated[bool, Option("--bt", help="Override the trader's TRADER_MODE to backtest mode.")] = False,
     submission: Annotated[bool, Option("--submission", help="Run the trader in submission mode.")] = False,
     gs: Annotated[bool, Option("--gs", help="Run the trader in grid-search mode.")] = False,
@@ -30,7 +31,7 @@ def run(
         print("Error: --out and --no-out are mutually exclusive")
         sys.exit(1)
 
-    day, product = __parse_day_product(ctx.args)
+    day, product = __parse_day_product(ctx.args, all_days)
     run_mode = __parse_run_mode(bt, submission, gs)
     options = TestOptions(algorithm, round_num, day, product, __parse_out(out, no_out, run_mode))
     options.run_mode = run_mode
@@ -67,7 +68,7 @@ def __parse_run_mode(bt: bool, submission: bool, gs: bool) -> Optional[RunMode]:
     return selected_modes[0]
 
 
-def __parse_day_product(args: list[str]) -> tuple[str, str]:
+def __parse_day_product(args: list[str], all_days: bool) -> tuple[str, str]:
     if len(args) > 2:
         print("Error: expected at most two optional positional values: DAY and PRODUCT")
         sys.exit(1)
@@ -77,7 +78,11 @@ def __parse_day_product(args: list[str]) -> tuple[str, str]:
             print(f"Error: unknown option {arg}")
             sys.exit(1)
 
-    day = args[0].lower() if len(args) >= 1 else "all"
+    if len(args) >= 1 and args[0].lower() == "all" and all_days:
+        print("Error: use either positional DAY='all' or --all, not both")
+        sys.exit(1)
+
+    day = args[0].lower() if len(args) >= 1 else ("all" if all_days else "default")
     product = __parse_product(args[1]) if len(args) == 2 else "all"
 
     return day, product

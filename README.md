@@ -13,9 +13,15 @@ This repository contains a Python-based backtester designed in preparation for t
 
 **Basic usage:**
 
-Run the backtester on an algorithm using all days and products from round 0
+Run the backtester on an algorithm using all days and products from round 
 ```bash
- $ python -m prosperity4bt <path to algorithm file> 0
+ $ python -m prosperity4bt <path to algorithm file> [ROUND] (DAY) (PRODUCT)
+ ```
+By default, omitted DAY uses all available days except day `9`. Use `--all` to include day `9`.
+
+Run the backtester on an algorithm using all available days, including day `9`
+```bash
+ $ python -m prosperity4bt <path to algorithm file> 0 --all
  ```
 
 Run the backtester on an algorithm using all products from round 1, day '-2'

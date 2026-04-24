@@ -78,13 +78,20 @@ class BackTester:
             print(f"Error: no data found for round {self.options.round_num}")
             sys.exit(1)
 
+        if self.options.day == "default":
+            days = [day for day in available_days if day != 9]
+            if len(days) == 0:
+                print(f"Error: no data found for round {self.options.round_num} excluding day 9. Use --all or specify a day.")
+                sys.exit(1)
+            return days
+
         if self.options.day == "all":
             return available_days
 
         try:
             day = int(self.options.day)
         except ValueError:
-            print("Error: day must be an integer or 'all'")
+            print("Error: day must be an integer, 'all', or omitted")
             sys.exit(1)
 
         if day not in available_days:
