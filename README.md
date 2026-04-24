@@ -42,6 +42,8 @@ The backtester uses that value by default, and CLI flags override it when needed
  $ python -m prosperity4bt <path to algorithm file> 1 --gs
  ```
 
+In `--gs` mode, the backtester writes a Parquet file with columns `round`, `day`, `timestamp`, and `pnl` unless `--no-out` is used.
+
 If you see: `No module named 'datamodel'`, set PYTHONPATH to the folder containing datamodel.py:  
 ```bash
  $env:PYTHONPATH="<path to>\imc-prosperity-4-backtester\prosperity4bt"

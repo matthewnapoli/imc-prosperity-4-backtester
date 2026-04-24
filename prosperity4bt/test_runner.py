@@ -9,13 +9,14 @@ from prosperity4bt.datamodel import TradingState, Observation, Symbol, Order, Or
 from prosperity4bt.tools.log_creator import ActivityLogCreator
 from prosperity4bt.models.input import BacktestData
 from prosperity4bt.models.output import BacktestResult
+from prosperity4bt.models.output import PnlRow
 from prosperity4bt.models.output import SandboxLogRow
 from prosperity4bt.tools.order_match_maker import OrderMatchMaker
 
 
 class TestRunner:
 
-    def __init__(self, trader, data_reader: BackDataReader, round: int, day: int, show_progress_bar: bool=False, print_output: bool=False, trade_matching_mode=TradeMatchingMode.all):
+    def __init__(self, trader, data_reader: BackDataReader, round: int, day: int, show_progress_bar: bool=False, print_output: bool=False, trade_matching_mode=TradeMatchingMode.all, pnl_only: bool=False):
         self.trader = trader
         self.data_reader = data_reader
         self.round = round
@@ -23,6 +24,7 @@ class TestRunner:
         self.show_progress_bar = show_progress_bar
         self.print_output = print_output
         self.trade_matching_mode = trade_matching_mode
+        self.pnl_only = pnl_only
 
 
     def run(self):
@@ -46,10 +48,14 @@ class TestRunner:
             state = self.__initialize_trade_state(state, data, timestamp)
             orders = self.__run_trader(state, result, timestamp)
 
-            # self.__validate_orders(orders)
-            self.__create_activity_logs(state, data, result)
-            self.__enforce_limits(state, data, orders, result.sandbox_logs[-1])
+            sandbox_row = result.sandbox_logs[-1] if len(result.sandbox_logs) > 0 else None
+            self.__enforce_limits(state, data, orders, sandbox_row)
             self.__match_orders(state, data, orders, result)
+
+            if self.pnl_only:
+                self.__create_pnl_row(state, data, result)
+            else:
+                self.__create_activity_logs(state, data, result)
 
         return result
 
@@ -68,6 +74,11 @@ class TestRunner:
         return "mid_price"
 
     def __run_trader(self, state: TradingState, result: BacktestResult, timestamp: int) -> dict[Symbol, list[Order]]:
+        if self.pnl_only and not self.print_output:
+            orders, conversions, trader_data = self.trader.run(state)
+            state.traderData = trader_data
+            return orders
+
         stdout = StringIO()
         # Tee calls stdout.close(), making stdout.getvalue() impossible
         # This override makes getvalue() possible after close()
@@ -144,8 +155,21 @@ class TestRunner:
         log = log_creator.create_log()
         result.activity_logs.extend(log)
 
+    def __create_pnl_row(self, state: TradingState, data: BacktestData, result: BacktestResult) -> None:
+        total_pnl = 0.0
+        for product in data.products:
+            row = data.prices[state.timestamp][product]
+            fair_value = row.fair_value if row.fair_value is not None else row.mid_price
+            product_profit_loss = data.profit_loss[product]
+            position = state.position.get(product, 0)
+            if position != 0:
+                product_profit_loss += position * fair_value
+            total_pnl += product_profit_loss
 
-    def __enforce_limits(self, state: TradingState, data: BacktestData, orders: dict[Symbol, list[Order]], sandbox_row: SandboxLogRow) -> None:
+        result.pnl_rows.append(PnlRow(data.round_num, result.day_num, state.timestamp, total_pnl))
+
+
+    def __enforce_limits(self, state: TradingState, data: BacktestData, orders: dict[Symbol, list[Order]], sandbox_row: SandboxLogRow | None) -> None:
         sandbox_log_lines = []
         for product in data.products:
             product_orders = orders.get(product, [])
@@ -153,16 +177,19 @@ class TestRunner:
 
             total_long = sum(order.quantity for order in product_orders if order.quantity > 0)
             total_short = sum(abs(order.quantity) for order in product_orders if order.quantity < 0)
+            remaining_buy_capacity = LIMITS[product] - product_position
+            remaining_sell_capacity = LIMITS[product] + product_position
 
-            if product_position + total_long > LIMITS[product] or product_position - total_short < -LIMITS[product]:
+            if total_long > remaining_buy_capacity or total_short > remaining_sell_capacity:
                 sandbox_log_lines.append(f"Orders for product {product} exceeded limit of {LIMITS[product]} set")
                 orders.pop(product)
 
-        if len(sandbox_log_lines) > 0:
+        if len(sandbox_log_lines) > 0 and sandbox_row is not None:
             sandbox_row.sandbox_log += "\n" + "\n".join(sandbox_log_lines)
 
 
     def __match_orders(self, state: TradingState, data: BacktestData, orders: dict[Symbol, list[Order]], result: BacktestResult) -> None:
         match_maker = OrderMatchMaker(state, data, orders, self.trade_matching_mode)
         matched_trades = match_maker.match()
-        result.trades.extend(matched_trades)
+        if not self.pnl_only:
+            result.trades.extend(matched_trades)

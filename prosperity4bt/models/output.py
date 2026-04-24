@@ -126,6 +126,30 @@ class TradeRow:
 
 
 @dataclass
+class PnlRow:
+    round_num: int
+    day_num: int
+    timestamp: int
+    pnl: float
+
+    def with_offset(self, timestamp_offset: int, pnl_offset: float) -> "PnlRow":
+        return PnlRow(
+            self.round_num,
+            self.day_num,
+            self.timestamp + timestamp_offset,
+            self.pnl + pnl_offset,
+        )
+
+    def to_dict(self) -> dict[str, float | int]:
+        return {
+            "round": self.round_num,
+            "day": self.day_num,
+            "timestamp": self.timestamp,
+            "pnl": self.pnl,
+        }
+
+
+@dataclass
 class BacktestResult:
     round_num: int
     day_num: int
@@ -133,24 +157,38 @@ class BacktestResult:
     sandbox_logs: list[SandboxLogRow]
     activity_logs: list[ActivityLogRow]
     trades: list[TradeRow]
+    pnl_rows: list[PnlRow]
     activity_value_column: str
 
-    def __init__(self, round_num: int, day_num: int, sandbox_logs: list[SandboxLogRow]=None, activity_logs: list[ActivityLogRow]=None, trades: list[TradeRow]=None, activity_value_column: str="mid_price"):
+    def __init__(self, round_num: int, day_num: int, sandbox_logs: list[SandboxLogRow]=None, activity_logs: list[ActivityLogRow]=None, trades: list[TradeRow]=None, activity_value_column: str="mid_price", pnl_rows: list[PnlRow]=None):
         self.round_num = round_num
         self.day_num = day_num
         self.last_day_num = day_num
         self.sandbox_logs = sandbox_logs if sandbox_logs is not None else []
         self.activity_logs = activity_logs if activity_logs is not None else []
         self.trades = trades if trades is not None else []
+        self.pnl_rows = pnl_rows if pnl_rows is not None else []
         self.activity_value_column = activity_value_column
 
     # return a list of activities that happened at the end of the day, i.e. last timestamp
     def final_activities(self) -> list[ActivityLogRow]:
+        if len(self.activity_logs) == 0:
+            return []
         last_time_stamp = self.activity_logs[-1].timestamp
         return [activity for activity in self.activity_logs if activity.timestamp == last_time_stamp]
 
+    def is_pnl_only(self) -> bool:
+        return (
+            len(self.pnl_rows) > 0
+            and len(self.sandbox_logs) == 0
+            and len(self.activity_logs) == 0
+            and len(self.trades) == 0
+        )
 
     def to_dict(self) -> dict:
+        if self.is_pnl_only():
+            return {"pnl": [row.to_dict() for row in self.pnl_rows]}
+
         return {
             "submissionId": str(uuid.uuid4()),
             "activitiesLog": ActivityLogRow.get_header_str(self.activity_value_column) + '\n' +'\n'.join([str(al) for al in self.activity_logs]),

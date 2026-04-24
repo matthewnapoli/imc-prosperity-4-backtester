@@ -50,7 +50,7 @@ class BackTester:
             OutputFileWriter.write_to_file(self.options.output_file, merged_result)
             print(f"\nSuccessfully saved backtest results to {self.__format_path(self.options.output_file)}")
 
-            if self.options.show_visualizer:
+            if self.options.show_visualizer and not merged_result.is_pnl_only():
                 self.__open_visualizer()
 
 
@@ -112,6 +112,7 @@ class BackTester:
         reload(trader_module)
         self.__configure_algorithm_mode(trader_module)
         trader = trader_module.Trader()
+        pnl_only = self.__is_grid_search_mode(trader_module)
         test_runner = TestRunner(
             trader,
             data_reader,
@@ -119,7 +120,8 @@ class BackTester:
             day,
             self.options.show_progress,
             self.options.print_output,
-            self.options.trade_matching_mode)
+            self.options.trade_matching_mode,
+            pnl_only)
         result = test_runner.run()
         return result
 
@@ -155,6 +157,10 @@ class BackTester:
             RunMode.gs: getattr(trader_module, "GRID_SEARCH_MODE", "grid_search_mode"),
         }
         return mode_names[self.options.run_mode]
+
+    def __is_grid_search_mode(self, trader_module) -> bool:
+        grid_search_mode = getattr(trader_module, "GRID_SEARCH_MODE", "grid_search_mode")
+        return trader_module.TRADER_MODE == grid_search_mode
 
 
     def __format_path(self, path: Path) -> str:

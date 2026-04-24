@@ -28,6 +28,7 @@ class ResultMerger:
         sandbox_logs = a.sandbox_logs[:]
         activity_logs = a.activity_logs[:]
         trades = a.trades[:]
+        pnl_rows = a.pnl_rows[:]
 
         timestamp_offset = self.__timestamp_offset(a, b)
         sandbox_logs.extend([row.with_offset(timestamp_offset) for row in b.sandbox_logs])
@@ -35,12 +36,14 @@ class ResultMerger:
 
         profit_loss_offsets = self.__profile_loss_offset(a)
         activity_logs.extend([row.with_offset(timestamp_offset, profit_loss_offsets[row.symbol]) for row in b.activity_logs])
+        pnl_offset = self.__pnl_offset(a)
+        pnl_rows.extend([row.with_offset(timestamp_offset, pnl_offset) for row in b.pnl_rows])
 
         activity_value_column = a.activity_value_column
         if a.activity_value_column != b.activity_value_column:
             activity_value_column = "fair_value"
 
-        result = BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades, activity_value_column)
+        result = BacktestResult(a.round_num, a.day_num, sandbox_logs, activity_logs, trades, activity_value_column, pnl_rows)
         result.last_day_num = b.last_day_num
         return result
 
@@ -49,7 +52,12 @@ class ResultMerger:
         if not self.merge_timestamps:
             return 0
 
-        last_timestamp = previous.activity_logs[-1].timestamp
+        if len(previous.activity_logs) > 0:
+            last_timestamp = previous.activity_logs[-1].timestamp
+        elif len(previous.pnl_rows) > 0:
+            last_timestamp = previous.pnl_rows[-1].timestamp
+        else:
+            last_timestamp = 0
         return last_timestamp + 100
 
 
@@ -58,9 +66,18 @@ class ResultMerger:
     # if merge_profit_loss is True, return a dict of symbol -> profit/loss of the last activity log of the previous result
     def __profile_loss_offset(self, previous: BacktestResult) -> dict[str, float]:
         profit_loss_offsets = defaultdict(float)
+        if len(previous.activity_logs) == 0:
+            return profit_loss_offsets
+
         last_timestamp = previous.activity_logs[-1].timestamp
         last_activities = [al for al in previous.activity_logs if al.timestamp == last_timestamp]
         for activity in last_activities:
             profit_loss_offsets[activity.symbol] = activity.profit_loss if self.merge_profit_loss else 0
 
         return profit_loss_offsets
+
+    def __pnl_offset(self, previous: BacktestResult) -> float:
+        if not self.merge_profit_loss or len(previous.pnl_rows) == 0:
+            return 0.0
+
+        return previous.pnl_rows[-1].pnl

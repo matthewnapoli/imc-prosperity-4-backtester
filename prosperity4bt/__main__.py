@@ -13,7 +13,7 @@ def run(
     ctx: Context,
     algorithm: Annotated[Path, Argument(help="Path to the Python file containing the algorithm to backtest.", show_default=False,exists=True, file_okay=True, dir_okay=False, resolve_path=True)],
     round_num: Annotated[int, Argument(help="Round number to backtest. Optionally pass DAY and PRODUCT after it. DAY and PRODUCT default to 'all'.", show_default=False)],
-    out: Annotated[Optional[Path], Option(help="File to save output log to (defaults to backtests/<timestamp>.log).", show_default=False, dir_okay=False, resolve_path=True)] = None,
+    out: Annotated[Optional[Path], Option(help="File to save output to (defaults to backtests/<timestamp>.log, or .parquet in --gs mode).", show_default=False, dir_okay=False, resolve_path=True)] = None,
     no_out: Annotated[bool, Option("--no-out", help="Skip saving output log.")] = False,
     data: Annotated[Optional[Path], Option(help="Path to a product-partitioned Parquet resources directory.", show_default=False, exists=True, file_okay=False, dir_okay=True, resolve_path=True)] = None,
     print_output: Annotated[bool, Option("--print", help="Print the trader's output to stdout while it's running.")] = False,
@@ -31,8 +31,9 @@ def run(
         sys.exit(1)
 
     day, product = __parse_day_product(ctx.args)
-    options = TestOptions(algorithm, round_num, day, product, __parse_out(out, no_out))
-    options.run_mode = __parse_run_mode(bt, submission, gs)
+    run_mode = __parse_run_mode(bt, submission, gs)
+    options = TestOptions(algorithm, round_num, day, product, __parse_out(out, no_out, run_mode))
+    options.run_mode = run_mode
     options.back_data_dir = data
     options.print_output = print_output
     options.trade_matching_mode = match_trades
@@ -86,7 +87,7 @@ def __parse_product(product: str) -> str:
     return canonical_product(product)
 
 
-def __parse_out(out: Optional[Path], no_out: bool) -> Optional[Path]:
+def __parse_out(out: Optional[Path], no_out: bool, run_mode: Optional[RunMode]) -> Optional[Path]:
     if out is not None:
         return out
 
@@ -94,7 +95,8 @@ def __parse_out(out: Optional[Path], no_out: bool) -> Optional[Path]:
         return None
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    return Path.cwd() / "backtests" / f"{timestamp}.log"
+    suffix = ".parquet" if run_mode == RunMode.gs else ".log"
+    return Path.cwd() / "backtests" / f"{timestamp}{suffix}"
 
 
 def main() -> None:
